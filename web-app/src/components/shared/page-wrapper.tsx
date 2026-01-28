@@ -6,7 +6,7 @@ export default function PageWrapper({
   className
 }: {
   children: ReactNode
-  className?: ComponentProps<"div">
+  className?: ComponentProps<"div">["className"]
 }) {
   return (
     <div

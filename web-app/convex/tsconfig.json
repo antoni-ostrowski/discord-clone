@@ -14,12 +14,12 @@
 
     /* These compiler options are required by Convex */
     "target": "ESNext",
-    "lib": ["ES2021", "dom", "ESNext"],
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "forceConsistentCasingInFileNames": true,
     "module": "ESNext",
     "isolatedModules": true,
     "noEmit": true
   },
   "include": ["./**/*"],
-  "exclude": ["./_generated", "./betterAuth/_generated", "./node_modules/*/**"]
+  "exclude": ["./_generated"]
 }

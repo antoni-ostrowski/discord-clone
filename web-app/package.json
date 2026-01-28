@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "vite dev --port 3000",
     "backend": "bunx convex dev",
-    "build": "bun run typecheck && bun run lint && vite build",
+    "build": "bun run typecheck && bun run lint && vite build --mode=production",
     "serve": "vite preview --port 3000",
     "lint": "oxlint --type-aware --fix",
     "format": "bunx prettier . --write",
@@ -18,7 +18,6 @@
     "@convex-dev/better-auth": "^0.10.4",
     "@convex-dev/react-query": "0.0.0-alpha.11",
     "@fontsource-variable/figtree": "^5.2.10",
-    "@polar-sh/better-auth": "^1.6.4",
     "@posthog/react": "^1.5.2",
     "@t3-oss/env-core": "^0.13.10",
     "@tailwindcss/vite": "^4.1.18",

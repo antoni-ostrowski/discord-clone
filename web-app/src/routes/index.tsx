@@ -1,52 +1,69 @@
+import PageWrapper from "@/components/shared/page-wrapper"
 import { Button } from "@/components/ui/button"
-import { usePostHog } from "@posthog/react"
-import { createFileRoute, Link } from "@tanstack/react-router"
+import { createFileRoute } from "@tanstack/react-router"
+import { useEffect, useRef, useState } from "react"
 
 export const Route = createFileRoute("/")({
   component: App
 })
 
 function App() {
-  const ph = usePostHog()
+  const { isReady, val, send } = useWs({ url: "ws://localhost:8080/echo" })
+
+  console.log(isReady, val)
+
+  useEffect(() => {
+    console.log("new val ", val)
+  }, [val])
 
   return (
-    <div className="flex h-screen w-full flex-col items-center justify-center">
-      <h1 className="text-4xl font-bold">welcome</h1>
-
-      <div className="font-semibold">
-        <Link to="/authed-route/test" className="hover:underline">
-          <p>
-            /authed-route/test - checkout authenticated route with todo example
+    <PageWrapper className={"items-center justify-center"}>
+      <div className="h-screen">
+        <Button
+          onClick={() => {
+            if (isReady && typeof send === "function") {
+              send("jfkdls")
+            }
+          }}
+        >
+          send
+        </Button>
+        Ready: {JSON.stringify(isReady)}
+        {val.map((a, index) => (
+          <p key={a + index}>
+            {index}, {a}
           </p>
-        </Link>
+        ))}
       </div>
-
-      <div className="font-semibold">
-        <Link to="/authed-route/polar" className="hover:underline">
-          <p>/authed-route/polar - checkout polar subscriptions</p>
-        </Link>
-      </div>
-      <h2 className="text-muted-foreground">
-        Try toggling the todo state from convex dashboard and see how client
-        reacts.
-      </h2>
-
-      <Button
-        className={"mt-4"}
-        variant={"outline"}
-        onClick={() => {
-          try {
-            ph.capture("some-event", {
-              somepropert: "fjkdslfjsklf"
-            })
-            console.log("captured")
-          } catch (e) {
-            console.error(e)
-          }
-        }}
-      >
-        Send test client posthog event
-      </Button>
-    </div>
+    </PageWrapper>
   )
+}
+
+export const useWs = ({ url }: { url: string }) => {
+  const [isReady, setIsReady] = useState(false)
+  const [val, setVal] = useState<string[]>([])
+
+  const ws = useRef<WebSocket | null>(null)
+
+  useEffect(() => {
+    const socket = new WebSocket(url)
+
+    socket.onopen = () => {
+      setIsReady(true)
+      console.log("webs on open")
+    }
+    socket.onclose = () => {
+      setIsReady(false)
+      console.log("webs on close")
+    }
+    socket.onmessage = (event) => setVal((prev) => [...prev, event.data])
+
+    ws.current = socket
+
+    return () => {
+      socket.close()
+    }
+  }, [url])
+
+  return { isReady, val, send: ws.current?.send.bind(ws.current) }
 }

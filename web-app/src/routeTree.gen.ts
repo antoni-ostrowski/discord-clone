@@ -10,11 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SignInRouteImport } from './routes/sign-in'
-import { Route as SuccessRouteRouteImport } from './routes/success/route'
-import { Route as AuthedRouteRouteRouteImport } from './routes/authed-route/route'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthedRouteTestRouteImport } from './routes/authed-route/test'
-import { Route as AuthedRoutePolarIndexRouteImport } from './routes/authed-route/polar/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
 const SignInRoute = SignInRouteImport.update({
@@ -22,30 +18,10 @@ const SignInRoute = SignInRouteImport.update({
   path: '/sign-in',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SuccessRouteRoute = SuccessRouteRouteImport.update({
-  id: '/success',
-  path: '/success',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthedRouteRouteRoute = AuthedRouteRouteRouteImport.update({
-  id: '/authed-route',
-  path: '/authed-route',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
-} as any)
-const AuthedRouteTestRoute = AuthedRouteTestRouteImport.update({
-  id: '/test',
-  path: '/test',
-  getParentRoute: () => AuthedRouteRouteRoute,
-} as any)
-const AuthedRoutePolarIndexRoute = AuthedRoutePolarIndexRouteImport.update({
-  id: '/polar/',
-  path: '/polar/',
-  getParentRoute: () => AuthedRouteRouteRoute,
 } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
@@ -55,66 +31,30 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/authed-route': typeof AuthedRouteRouteRouteWithChildren
-  '/success': typeof SuccessRouteRoute
   '/sign-in': typeof SignInRoute
-  '/authed-route/test': typeof AuthedRouteTestRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/authed-route/polar': typeof AuthedRoutePolarIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/authed-route': typeof AuthedRouteRouteRouteWithChildren
-  '/success': typeof SuccessRouteRoute
   '/sign-in': typeof SignInRoute
-  '/authed-route/test': typeof AuthedRouteTestRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/authed-route/polar': typeof AuthedRoutePolarIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/authed-route': typeof AuthedRouteRouteRouteWithChildren
-  '/success': typeof SuccessRouteRoute
   '/sign-in': typeof SignInRoute
-  '/authed-route/test': typeof AuthedRouteTestRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/authed-route/polar/': typeof AuthedRoutePolarIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/authed-route'
-    | '/success'
-    | '/sign-in'
-    | '/authed-route/test'
-    | '/api/auth/$'
-    | '/authed-route/polar'
+  fullPaths: '/' | '/sign-in' | '/api/auth/$'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/authed-route'
-    | '/success'
-    | '/sign-in'
-    | '/authed-route/test'
-    | '/api/auth/$'
-    | '/authed-route/polar'
-  id:
-    | '__root__'
-    | '/'
-    | '/authed-route'
-    | '/success'
-    | '/sign-in'
-    | '/authed-route/test'
-    | '/api/auth/$'
-    | '/authed-route/polar/'
+  to: '/' | '/sign-in' | '/api/auth/$'
+  id: '__root__' | '/' | '/sign-in' | '/api/auth/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AuthedRouteRouteRoute: typeof AuthedRouteRouteRouteWithChildren
-  SuccessRouteRoute: typeof SuccessRouteRoute
   SignInRoute: typeof SignInRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
@@ -128,40 +68,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignInRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/success': {
-      id: '/success'
-      path: '/success'
-      fullPath: '/success'
-      preLoaderRoute: typeof SuccessRouteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/authed-route': {
-      id: '/authed-route'
-      path: '/authed-route'
-      fullPath: '/authed-route'
-      preLoaderRoute: typeof AuthedRouteRouteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/': {
       id: '/'
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/authed-route/test': {
-      id: '/authed-route/test'
-      path: '/test'
-      fullPath: '/authed-route/test'
-      preLoaderRoute: typeof AuthedRouteTestRouteImport
-      parentRoute: typeof AuthedRouteRouteRoute
-    }
-    '/authed-route/polar/': {
-      id: '/authed-route/polar/'
-      path: '/polar'
-      fullPath: '/authed-route/polar'
-      preLoaderRoute: typeof AuthedRoutePolarIndexRouteImport
-      parentRoute: typeof AuthedRouteRouteRoute
     }
     '/api/auth/$': {
       id: '/api/auth/$'
@@ -173,23 +85,8 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface AuthedRouteRouteRouteChildren {
-  AuthedRouteTestRoute: typeof AuthedRouteTestRoute
-  AuthedRoutePolarIndexRoute: typeof AuthedRoutePolarIndexRoute
-}
-
-const AuthedRouteRouteRouteChildren: AuthedRouteRouteRouteChildren = {
-  AuthedRouteTestRoute: AuthedRouteTestRoute,
-  AuthedRoutePolarIndexRoute: AuthedRoutePolarIndexRoute,
-}
-
-const AuthedRouteRouteRouteWithChildren =
-  AuthedRouteRouteRoute._addFileChildren(AuthedRouteRouteRouteChildren)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AuthedRouteRouteRoute: AuthedRouteRouteRouteWithChildren,
-  SuccessRouteRoute: SuccessRouteRoute,
   SignInRoute: SignInRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
