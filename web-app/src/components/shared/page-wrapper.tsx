@@ -11,7 +11,7 @@ export default function PageWrapper({
   return (
     <div
       className={cn(
-        "flex h-full w-full flex-1 flex-col items-start justify-start",
+        "flex h-full w-full flex-1 flex-col items-center justify-center",
         className
       )}
     >

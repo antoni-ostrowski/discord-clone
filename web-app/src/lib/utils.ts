@@ -1,17 +1,8 @@
 import { clsx, type ClassValue } from "clsx"
-import { ConvexError } from "convex/values"
 import { twMerge } from "tailwind-merge"
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
-}
-
-export function parseConvexError(error: unknown) {
-  const errMess =
-    error instanceof ConvexError
-      ? (error.data as string)
-      : `[ERROR] Unexpected error occurred - ${error}`
-  return errMess
 }
 
 export function getCurrentUnixTimestamp(): number {
@@ -40,12 +31,4 @@ export function tryCatchSync<T, E = Error>(func: () => T): Result<T, E> {
   } catch (error) {
     return [null, error as E]
   }
-}
-
-export const isAuthError = (error: unknown) => {
-  const message =
-    (error instanceof ConvexError && error.data) ||
-    (error instanceof Error && error.message) ||
-    ""
-  return /auth/i.test(message)
 }

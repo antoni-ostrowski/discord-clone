@@ -1,16 +1,27 @@
 import { env } from "@/env"
-import { isAuthError } from "@/lib/utils"
 import { convexClient } from "@convex-dev/better-auth/client/plugins"
 import { convexBetterAuthReactStart } from "@convex-dev/better-auth/react-start"
-import { createServerFn } from "@tanstack/react-start"
+import { QueryClient } from "@tanstack/react-query"
+import {
+  inferAdditionalFields,
+  organizationClient
+} from "better-auth/client/plugins"
 import { createAuthClient } from "better-auth/react"
+import { createAuthMutations } from "better-convex/react"
+import { Auth } from "../../convex/functions/auth"
 
 export const authClient = createAuthClient({
   baseURL: env.VITE_SITE_URL,
-  plugins: [convexClient()]
+  plugins: [inferAdditionalFields<Auth>(), organizationClient(), convexClient()]
 })
 
-// those are necessary utils to fetch convex functions from tanstack server code
+export const {
+  useSignInMutationOptions,
+  useSignInSocialMutationOptions,
+  useSignOutMutationOptions,
+  useSignUpMutationOptions
+} = createAuthMutations(authClient)
+
 export const {
   handler,
   getToken,
@@ -19,11 +30,7 @@ export const {
   fetchAuthAction
 } = convexBetterAuthReactStart({
   convexUrl: env.VITE_CONVEX_URL,
-  convexSiteUrl: env.VITE_CONVEX_SITE_URL,
-  jwtCache: {
-    enabled: true,
-    isAuthError
-  }
+  convexSiteUrl: env.VITE_CONVEX_SITE_URL
 })
 
 /**
@@ -39,9 +46,19 @@ export function useSession() {
   }
 }
 
-/**
- * This is server function to fetch the data from convex using current cookies. It's a default func from convex + better auth docs.
- */
-export const getAuth = createServerFn({ method: "GET" }).handler(async () => {
-  return await getToken()
-})
+export const getClientAuth = async (qc: QueryClient) => {
+  const session = await qc.fetchQuery({
+    queryKey: ["client-auth"],
+    queryFn: () => authClient.getSession()
+  })
+
+  return {
+    isAuthenticated: !!session.data?.user,
+    user: session.data?.user
+  }
+}
+
+export const getServerAuth = async () => {
+  const token = await getToken()
+  return { isAuthenticated: !!token }
+}

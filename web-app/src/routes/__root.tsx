@@ -1,33 +1,30 @@
-import SignOutBtn from "@/components/auth/sign-out-btn"
 import { DefaultCatchBoundary } from "@/components/router/default-error-boundary"
 import { NotFound } from "@/components/router/default-not-found"
 import { Toaster } from "@/components/ui/sonner"
-import { authClient, getAuth } from "@/lib/auth-client"
-import { PHProvider } from "@/lib/providers/posthog/provider"
-import {
-  ThemeProvider,
-  useGetTheme
-} from "@/lib/providers/theme/theme-provider"
-import ThemeToggle from "@/lib/providers/theme/theme-toggle"
-import { ConvexBetterAuthProvider } from "@convex-dev/better-auth/react"
-import { ConvexQueryClient } from "@convex-dev/react-query"
+import { authClient, getClientAuth, getServerAuth } from "@/lib/auth-client"
+import { ThemeProvider, useGetTheme } from "@/lib/theme/theme-provider"
 import { TanStackDevtools } from "@tanstack/react-devtools"
-import { type QueryClient } from "@tanstack/react-query"
+import { isServer } from "@tanstack/react-query"
 import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools"
 import {
   HeadContent,
   Outlet,
   Scripts,
   createRootRouteWithContext,
-  useRouteContext
+  useRouteContext,
+  useRouter
 } from "@tanstack/react-router"
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools"
-import { ConvexQueryCacheProvider } from "convex-helpers/react/cache"
+import { ConvexAuthProvider } from "better-convex/auth-client"
+import { VanillaCRPCClient } from "better-convex/crpc"
+import { ConvexQueryClient, ConvexReactClient } from "better-convex/react"
+import { Api } from "../../convex/types"
 import appCss from "../styles.css?url"
 
 export interface MyRouterContext {
-  queryClient: QueryClient
+  convexReactClient: ConvexReactClient
   convexQueryClient: ConvexQueryClient
+  crpcClient: VanillaCRPCClient<Api>
 }
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
@@ -58,43 +55,31 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       </RootDocument>
     )
   },
-  notFoundComponent: () => <NotFound />,
-  // this will run on every page navigation,
-  // but JWT caching from convex ensures the navigation
-  // still feels snappy while keeping the app safe
-  beforeLoad: async (ctx) => {
-    const token = await getAuth()
-    // all queries, mutations and actions through TanStack Query will be
-    // authenticated during SSR if we have a valid token
-    if (token) {
-      // During SSR only (the only time serverHttpClient exists),
-      // set the auth token to make HTTP queries with.
-      ctx.context.convexQueryClient.serverHttpClient?.setAuth(token)
-    }
-    return {
-      isAuthenticated: !!token,
-      token
-    }
+  beforeLoad: async ({ context }) => {
+    const auth = isServer
+      ? await getServerAuth()
+      : await getClientAuth(context.convexQueryClient.queryClient)
+
+    return { auth }
   },
+  notFoundComponent: () => <NotFound />,
   component: RootComponent
 })
-
 function RootComponent() {
   const context = useRouteContext({ from: Route.id })
+  const router = useRouter()
+
   return (
-    <PHProvider>
-      <ConvexBetterAuthProvider
-        client={context.convexQueryClient.convexClient}
-        authClient={authClient}
-        initialToken={context.token}
-      >
-        <ConvexQueryCacheProvider>
-          <RootDocument>
-            <Outlet />
-          </RootDocument>
-        </ConvexQueryCacheProvider>
-      </ConvexBetterAuthProvider>
-    </PHProvider>
+    <ConvexAuthProvider
+      authClient={authClient}
+      client={context.convexReactClient}
+      onMutationUnauthorized={() => router.navigate({ to: "/sign-in" })}
+      onQueryUnauthorized={() => router.navigate({ to: "/sign-in" })}
+    >
+      <RootDocument>
+        <Outlet />
+      </RootDocument>
+    </ConvexAuthProvider>
   )
 }
 
@@ -109,12 +94,6 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         </head>
         <body>
           <Toaster />
-          <div className="absolute top-4 left-4 flex flex-row gap-2">
-            <SignOutBtn />
-            <div>
-              <ThemeToggle />
-            </div>
-          </div>
           {children}
           <TanStackDevtools
             config={{

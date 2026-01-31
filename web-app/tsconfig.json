@@ -17,7 +17,7 @@
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": false,
     "noEmit": true,
-
+    "strictFunctionTypes": false,
     /* Linting */
     "skipLibCheck": true,
     "strict": true,
@@ -27,7 +27,8 @@
     "noUncheckedSideEffectImports": true,
     // "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+    "@convex/*": ["./convex/functions/_generated/*", "./convex/shared/*"]
     }
   }
 }

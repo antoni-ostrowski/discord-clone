@@ -7,9 +7,7 @@ export const env = createEnv({
   client: {
     VITE_CONVEX_URL: Schema.standardSchemaV1(Schema.String),
     VITE_CONVEX_SITE_URL: Schema.standardSchemaV1(Schema.String),
-    VITE_SITE_URL: Schema.standardSchemaV1(Schema.String),
-    VITE_PUBLIC_POSTHOG_KEY: Schema.standardSchemaV1(Schema.String),
-    VITE_PUBLIC_POSTHOG_HOST: Schema.standardSchemaV1(Schema.String)
+    VITE_SITE_URL: Schema.standardSchemaV1(Schema.String)
   },
 
   runtimeEnv: {

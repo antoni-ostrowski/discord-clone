@@ -1,18 +1,31 @@
-import { ConvexQueryClient } from "@convex-dev/react-query"
+import { api } from "@convex/api"
+import { meta } from "@convex/meta"
 import {
+  DefaultOptions,
   MutationCache,
+  QueryCache,
   QueryClient,
+  QueryClientProvider,
   QueryKey,
+  defaultShouldDehydrateQuery,
   notifyManager
 } from "@tanstack/react-query"
 import { createRouter } from "@tanstack/react-router"
-import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query"
+import { isCRPCClientError } from "better-convex/crpc"
+import {
+  ConvexReactClient,
+  createVanillaCRPCProxy,
+  getConvexQueryClientSingleton,
+  getQueryClientSingleton
+} from "better-convex/react"
+import { isCRPCError } from "better-convex/server"
 import { Effect } from "effect"
 import { toast } from "sonner"
+import SuperJSON from "superjson"
 import { DefaultCatchBoundary } from "./components/router/default-error-boundary"
 import { NotFound } from "./components/router/default-not-found"
 import { env } from "./env"
-import { parseConvexError } from "./lib/utils"
+import { CRPCProvider } from "./lib/convex/cprc"
 import { routeTree } from "./routeTree.gen"
 
 declare module "@tanstack/react-query" {
@@ -26,20 +39,50 @@ declare module "@tanstack/react-query" {
     }
   }
 }
-export function getRouter() {
-  if (typeof document !== "undefined") {
-    notifyManager.setScheduler(window.requestAnimationFrame)
+
+export const hydrationConfig: Pick<DefaultOptions, "dehydrate" | "hydrate"> = {
+  dehydrate: {
+    serializeData: SuperJSON.serialize,
+    shouldDehydrateQuery: (query) =>
+      defaultShouldDehydrateQuery(query) || query.state.status === "pending",
+    shouldRedactErrors: () => false
+  },
+  hydrate: {
+    deserializeData: SuperJSON.deserialize
   }
+}
 
-  if (!env.VITE_CONVEX_URL) {
-    Effect.runSync(Effect.logError("missing envar VITE_CONVEX_URL"))
-  }
+export function createQueryClient() {
+  return new QueryClient({
+    defaultOptions: {
+      ...hydrationConfig,
+      queries: {
+        staleTime: Infinity,
+        retry: (failureCount, error) => {
+          // Don't retry deterministic CRPC errors (auth, validation, HTTP 4xx)
+          if (isCRPCError(error)) return false
 
-  const convexQueryClient = new ConvexQueryClient(env.VITE_CONVEX_URL, {
-    expectAuth: true
-  })
+          const message = error instanceof Error ? error.message : String(error)
 
-  const queryClient: QueryClient = new QueryClient({
+          if (message.includes("timed out") && failureCount < 3) {
+            console.warn(
+              `[QueryClient] Retrying timed out query (attempt ${failureCount + 1}/3)`
+            )
+            return true
+          }
+
+          return failureCount < 3
+        },
+        retryDelay: (attemptIndex) => Math.min(2000 * 2 ** attemptIndex, 30_000)
+      }
+    },
+    queryCache: new QueryCache({
+      onError: (error) => {
+        if (isCRPCClientError(error)) {
+          console.log(`[CRPC] ${error.code}:`, error.functionName)
+        }
+      }
+    }),
     mutationCache: new MutationCache({
       onMutate: (_data, _variables, _context) => {
         if (_context.meta?.withToasts && _context.meta.loadingMessage) {
@@ -49,6 +92,10 @@ export function getRouter() {
         }
       },
       onSuccess: (_data, _variables, _context, mutation) => {
+        if (!mutation.meta?.successMessage && mutation.meta?.withToasts) {
+          toast.dismiss(mutation.mutationId)
+          return
+        }
         if (mutation.meta?.successMessage && mutation.meta.withToasts) {
           toast.success(mutation.meta.successMessage, {
             id: mutation.mutationId
@@ -57,28 +104,33 @@ export function getRouter() {
       },
       onError: (_error, _variables, _context, mutation) => {
         if (mutation.meta?.errorMessage || mutation.meta?.withToasts) {
-          toast.error(parseConvexError(_error), { id: mutation.mutationId })
-        }
-      },
-      onSettled: async (_data, _error, _variables, _context, mutation) => {
-        {
-          if (mutation.meta?.invalidatesQuery) {
-            await queryClient.invalidateQueries({
-              queryKey: mutation.meta?.invalidatesQuery
-            })
+          toast.error(_error.message, { id: mutation.mutationId })
+          if (isCRPCClientError(_error)) {
+            console.log(`[CRPC] ${_error.code}:`, _error.functionName)
           }
         }
       }
-    }),
-    defaultOptions: {
-      queries: {
-        queryKeyHashFn: convexQueryClient.hashFn(),
-        queryFn: convexQueryClient.queryFn()
-      }
-    }
+    })
+  })
+}
+
+export function getRouter() {
+  if (typeof document !== "undefined") {
+    notifyManager.setScheduler(window.requestAnimationFrame)
+  }
+
+  if (!env.VITE_CONVEX_URL) {
+    Effect.runSync(Effect.logError("missing envar VITE_CONVEX_URL"))
+  }
+
+  const queryClient = getQueryClientSingleton(createQueryClient)
+  const convex = new ConvexReactClient(env.VITE_CONVEX_URL)
+  const convexQueryClient = getConvexQueryClientSingleton({
+    convex,
+    queryClient
   })
 
-  convexQueryClient.connect(queryClient)
+  const crpcClient = createVanillaCRPCProxy(api, meta, convex)
 
   const router = createRouter({
     routeTree,
@@ -86,12 +138,17 @@ export function getRouter() {
     scrollRestoration: true,
     defaultErrorComponent: DefaultCatchBoundary,
     defaultNotFoundComponent: () => <NotFound />,
-    context: { queryClient, convexQueryClient }
-  })
-
-  setupRouterSsrQueryIntegration({
-    router,
-    queryClient
+    Wrap: ({ children }) => (
+      <QueryClientProvider client={queryClient}>
+        <CRPCProvider
+          convexClient={convex}
+          convexQueryClient={convexQueryClient}
+        >
+          {children}
+        </CRPCProvider>
+      </QueryClientProvider>
+    ),
+    context: { convexReactClient: convex, convexQueryClient, crpcClient }
   })
 
   return router

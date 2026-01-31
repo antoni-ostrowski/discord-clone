@@ -2,8 +2,6 @@
 
 @import "tw-animate-css";
 
-@import "@fontsource-variable/figtree";
-
 @custom-variant dark (&:is(.dark *));
 
 body {
