@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as WsRouteImport } from './routes/ws'
 import { Route as TodosRouteImport } from './routes/todos'
 import { Route as SuccessRouteImport } from './routes/success'
 import { Route as SignInRouteImport } from './routes/sign-in'
@@ -16,6 +17,11 @@ import { Route as ChannelsRouteImport } from './routes/channels'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
+const WsRoute = WsRouteImport.update({
+  id: '/ws',
+  path: '/ws',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TodosRoute = TodosRouteImport.update({
   id: '/todos',
   path: '/todos',
@@ -53,6 +59,7 @@ export interface FileRoutesByFullPath {
   '/sign-in': typeof SignInRoute
   '/success': typeof SuccessRoute
   '/todos': typeof TodosRoute
+  '/ws': typeof WsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRoutesByTo {
@@ -61,6 +68,7 @@ export interface FileRoutesByTo {
   '/sign-in': typeof SignInRoute
   '/success': typeof SuccessRoute
   '/todos': typeof TodosRoute
+  '/ws': typeof WsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRoutesById {
@@ -70,6 +78,7 @@ export interface FileRoutesById {
   '/sign-in': typeof SignInRoute
   '/success': typeof SuccessRoute
   '/todos': typeof TodosRoute
+  '/ws': typeof WsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRouteTypes {
@@ -80,9 +89,17 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/success'
     | '/todos'
+    | '/ws'
     | '/api/auth/$'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/channels' | '/sign-in' | '/success' | '/todos' | '/api/auth/$'
+  to:
+    | '/'
+    | '/channels'
+    | '/sign-in'
+    | '/success'
+    | '/todos'
+    | '/ws'
+    | '/api/auth/$'
   id:
     | '__root__'
     | '/'
@@ -90,6 +107,7 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/success'
     | '/todos'
+    | '/ws'
     | '/api/auth/$'
   fileRoutesById: FileRoutesById
 }
@@ -99,11 +117,19 @@ export interface RootRouteChildren {
   SignInRoute: typeof SignInRoute
   SuccessRoute: typeof SuccessRoute
   TodosRoute: typeof TodosRoute
+  WsRoute: typeof WsRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/ws': {
+      id: '/ws'
+      path: '/ws'
+      fullPath: '/ws'
+      preLoaderRoute: typeof WsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/todos': {
       id: '/todos'
       path: '/todos'
@@ -155,6 +181,7 @@ const rootRouteChildren: RootRouteChildren = {
   SignInRoute: SignInRoute,
   SuccessRoute: SuccessRoute,
   TodosRoute: TodosRoute,
+  WsRoute: WsRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
 export const routeTree = rootRouteImport
