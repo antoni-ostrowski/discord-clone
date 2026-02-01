@@ -58,7 +58,8 @@ const schema = defineEntSchema({
       to: "user",
       ref: "lastActiveOrganizationId"
     })
-    .edges("usersPersonal", { to: "user", ref: "personalOrganizationId" }),
+    .edges("usersPersonal", { to: "user", ref: "personalOrganizationId" })
+    .edges("channel", { ref: true }),
 
   member: defineEnt({
     createdAt: v.number()
@@ -141,6 +142,12 @@ const schema = defineEntSchema({
       optional: true
     })
     .edges("todo", { ref: true })
+    .edges("channelMembers", { to: "channel", table: "channelMembers" })
+    .edge("currentChannel", {
+      to: "channel",
+      field: "currentChannelId",
+      optional: true
+    })
     // Indexes from both tables
     .index("email_name", ["email", "name"])
     .index("name", ["name"]),
@@ -151,7 +158,14 @@ const schema = defineEntSchema({
   }).edge("user", {
     to: "user",
     field: "userId"
+  }),
+
+  channel: defineEnt({
+    name: v.string()
   })
+    .edge("server", { to: "organization", field: "serverId" })
+    .edges("members", { to: "user", table: "channelMembers" })
+    .edges("users", { to: "user", ref: "currentChannelId" })
 })
 
 export default schema
@@ -167,6 +181,7 @@ export const todoZod = convexToZod(vv.doc("todo"))
 export const memberZod = convexToZod(vv.doc("member"))
 export const orgZod = convexToZod(vv.doc("organization"))
 export const invitationZod = convexToZod(vv.doc("invitation"))
+export const channelZod = convexToZod(vv.doc("channel"))
 
 export type UserType = Doc<"user">
 export type SessionType = Doc<"session">
@@ -177,3 +192,4 @@ export type TodoType = Doc<"todo">
 export type MemberType = Doc<"member">
 export type OrgType = Doc<"organization">
 export type InvitationType = Doc<"invitation">
+export type ChannelType = Doc<"channel">

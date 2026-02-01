@@ -1,4 +1,4 @@
-import { ConvexError } from "convex/values"
+import { CRPCError } from "better-convex/server"
 import { Data, Effect, Either, ManagedRuntime, pipe } from "effect"
 
 /**
@@ -15,13 +15,13 @@ export async function runEffOrThrow<A, E, R, E_Runtime>(
 
   if (Either.isLeft(result)) {
     const error = result.left
-    const errorMessage =
-      (error as Error).message ||
-      (typeof error === "string" ? error : "An unexpected error occurred")
 
     Effect.runSync(Effect.logError(error))
 
-    throw new ConvexError(errorMessage)
+    throw new CRPCError({
+      message: "internal server error",
+      code: "INTERNAL_SERVER_ERROR"
+    })
   }
 
   return result.right

@@ -46,6 +46,10 @@ function App() {
         <Link to="/todos" className="underline">
           todos
         </Link>
+
+        <Link to="/channels" className="underline">
+          channels
+        </Link>
         <div className="flex flex-col items-start justify-center">
           <h1 className="font-bold">your orgs</h1>
           {data?.organizations.map((org) => {

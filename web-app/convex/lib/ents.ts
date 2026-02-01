@@ -29,3 +29,9 @@ export const getCtxWithTable = <Ctx extends BaseMutationCtx | BaseQueryCtx>(
 export type QueryCtx = ReturnType<typeof getCtxWithTable<BaseQueryCtx>>
 
 export type MutationCtx = ReturnType<typeof getCtxWithTable<BaseMutationCtx>>
+
+export type EntsQueryCtx = ReturnType<typeof getCtxWithTable<BaseQueryCtx>>
+
+export type EntsMutationCtx = ReturnType<
+  typeof getCtxWithTable<BaseMutationCtx>
+>

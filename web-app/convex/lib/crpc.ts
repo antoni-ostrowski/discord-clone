@@ -41,17 +41,13 @@ export const privateMutation = c.mutation.internal()
 export const privateAction = c.action.internal()
 export const router = c.router
 
-const timingMiddleware = c.middleware(async ({ ctx, next }) => {
-  const start = Date.now()
-  const result = await next({ ctx })
-  console.log(`Request took ${Date.now() - start}ms`)
-  return result
-})
-
-const authMiddleware = c.middleware(async ({ ctx, next }) => {
+export const authQuery = c.query.use(async ({ ctx, next }) => {
   const session = await getSession(ctx)
   if (!session) {
-    throw new CRPCError({ code: "UNAUTHORIZED", message: "Not authenticated" })
+    throw new CRPCError({
+      code: "UNAUTHORIZED",
+      message: "Not authenticated"
+    })
   }
 
   const user = await ctx.table("user").getX(session.userId)
@@ -70,8 +66,27 @@ const authMiddleware = c.middleware(async ({ ctx, next }) => {
   })
 })
 
-export const authQuery = c.query.use(timingMiddleware).use(authMiddleware)
+export const authMutation = c.mutation.use(async ({ ctx, next }) => {
+  const session = await getSession(ctx)
+  if (!session) {
+    throw new CRPCError({
+      code: "UNAUTHORIZED",
+      message: "Not authenticated"
+    })
+  }
 
-export const authMutation = c.mutation.use(timingMiddleware).use(authMiddleware)
+  const user = await ctx.table("user").getX(session.userId)
 
-export const authAction = c.action.use(timingMiddleware).use(authMiddleware)
+  return next({
+    ctx: {
+      ...ctx,
+      auth: {
+        ...ctx.auth,
+        ...getAuth(ctx),
+        headers: await getHeaders(ctx, session)
+      },
+      user: { id: user._id, session, ...user.doc() },
+      userId: user._id
+    }
+  })
+})

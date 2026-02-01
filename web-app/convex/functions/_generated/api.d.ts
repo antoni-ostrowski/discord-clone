@@ -20,6 +20,66 @@ import type { GenericId as Id } from "convex/values";
  * ```
  */
 export declare const api: {
+  channel: {
+    m: {
+      create: FunctionReference<"mutation", "public", { name: string }, any>;
+      joinOrLeave: FunctionReference<
+        "mutation",
+        "public",
+        { action: "join" | "leave"; channelId: Id<"channel"> },
+        any
+      >;
+      remove: FunctionReference<
+        "mutation",
+        "public",
+        { channelId: Id<"channel"> },
+        any
+      >;
+    };
+    q: {
+      list: FunctionReference<
+        "query",
+        "public",
+        {},
+        Array<{
+          channel: {
+            _creationTime: number;
+            _id: Id<"channel">;
+            name: string;
+            serverId: Id<"organization">;
+          };
+          isCurrentUserMember: boolean;
+          members: Array<{
+            _creationTime: number;
+            _id: Id<"user">;
+            banExpires?: null | number;
+            banReason?: null | string;
+            banned?: null | boolean;
+            bio?: null | string;
+            createdAt: number;
+            currentChannelId?: Id<"channel">;
+            customerId?: string;
+            deletedAt?: number;
+            email: string;
+            emailVerified: boolean;
+            firstName?: null | string;
+            github?: null | string;
+            image?: null | string;
+            lastActiveOrganizationId?: Id<"organization">;
+            lastName?: null | string;
+            linkedin?: null | string;
+            location?: null | string;
+            name: string;
+            personalOrganizationId?: Id<"organization">;
+            role?: null | string;
+            updatedAt: number;
+            website?: null | string;
+            x?: null | string;
+          }>;
+        }>
+      >;
+    };
+  };
   organization: {
     createOrganization: FunctionReference<
       "mutation",
@@ -65,6 +125,21 @@ export declare const api: {
           text: string;
           userId: Id<"user">;
         }>
+      >;
+    };
+  };
+  user: {
+    q: {
+      getCurrentChannel: FunctionReference<
+        "query",
+        "public",
+        {},
+        {
+          _creationTime: number;
+          _id: Id<"channel">;
+          name: string;
+          serverId: Id<"organization">;
+        }
       >;
     };
   };

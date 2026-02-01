@@ -70,6 +70,41 @@ export type DataModel = {
     searchIndexes: {};
     vectorIndexes: {};
   };
+  channel: {
+    document: {
+      name: string;
+      serverId: Id<"organization">;
+      _id: Id<"channel">;
+      _creationTime: number;
+    };
+    fieldPaths: "_creationTime" | "_id" | "name" | "serverId";
+    indexes: {
+      by_id: ["_id"];
+      by_creation_time: ["_creationTime"];
+      serverId: ["serverId", "_creationTime"];
+    };
+    searchIndexes: {};
+    vectorIndexes: {};
+  };
+  channelMembers: {
+    document: {
+      channelId: Id<"channel">;
+      userId: Id<"user">;
+      _id: Id<"channelMembers">;
+      _creationTime: number;
+    };
+    fieldPaths: "_creationTime" | "_id" | "channelId" | "userId";
+    indexes: {
+      by_id: ["_id"];
+      by_creation_time: ["_creationTime"];
+      channelId: ["channelId", "_creationTime"];
+      channelId_userId: ["channelId", "userId", "_creationTime"];
+      userId: ["userId", "_creationTime"];
+      userId_channelId: ["userId", "channelId", "_creationTime"];
+    };
+    searchIndexes: {};
+    vectorIndexes: {};
+  };
   invitation: {
     document: {
       createdAt: number;
@@ -255,6 +290,7 @@ export type DataModel = {
       banned?: null | boolean;
       bio?: null | string;
       createdAt: number;
+      currentChannelId?: Id<"channel">;
       customerId?: string;
       deletedAt?: number;
       email: string;
@@ -283,6 +319,7 @@ export type DataModel = {
       | "banReason"
       | "bio"
       | "createdAt"
+      | "currentChannelId"
       | "customerId"
       | "deletedAt"
       | "email"
@@ -303,6 +340,7 @@ export type DataModel = {
     indexes: {
       by_id: ["_id"];
       by_creation_time: ["_creationTime"];
+      currentChannelId: ["currentChannelId", "_creationTime"];
       customerId: ["customerId", "_creationTime"];
       email: ["email", "_creationTime"];
       email_name: ["email", "name", "_creationTime"];
