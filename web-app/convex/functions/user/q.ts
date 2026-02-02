@@ -15,7 +15,9 @@ export const getCurrentChannel = authQuery
     const program = Effect.gen(function* () {
       const curChnId = ctx.user.currentChannelId
       if (!curChnId) {
-        return yield* new NotFoundError()
+        return yield* new NotFoundError({
+          message: "no current channel found for user"
+        })
       }
       return yield* effectifyPromise(
         () => ctx.table("channel").getX(curChnId).doc(),

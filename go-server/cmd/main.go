@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"log"
 	"net/http"
 
@@ -33,9 +32,4 @@ func main() {
 
 	})
 	log.Fatal(http.ListenAndServe("localhost:8080", nil))
-}
-
-type WSRequest struct {
-	Type    string          `json:"type"`
-	Payload json.RawMessage `json:"payload"`
 }
