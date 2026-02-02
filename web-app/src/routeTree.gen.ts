@@ -10,11 +10,10 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WsRouteImport } from './routes/ws'
-import { Route as TodosRouteImport } from './routes/todos'
-import { Route as SuccessRouteImport } from './routes/success'
 import { Route as SignInRouteImport } from './routes/sign-in'
-import { Route as ChannelsRouteImport } from './routes/channels'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ServerServerIdRouteImport } from './routes/server.$serverId'
+import { Route as ServerServerIdIndexRouteImport } from './routes/server.$serverId.index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
 const WsRoute = WsRouteImport.update({
@@ -22,30 +21,25 @@ const WsRoute = WsRouteImport.update({
   path: '/ws',
   getParentRoute: () => rootRouteImport,
 } as any)
-const TodosRoute = TodosRouteImport.update({
-  id: '/todos',
-  path: '/todos',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SuccessRoute = SuccessRouteImport.update({
-  id: '/success',
-  path: '/success',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const SignInRoute = SignInRouteImport.update({
   id: '/sign-in',
   path: '/sign-in',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ChannelsRoute = ChannelsRouteImport.update({
-  id: '/channels',
-  path: '/channels',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const ServerServerIdRoute = ServerServerIdRouteImport.update({
+  id: '/server/$serverId',
+  path: '/server/$serverId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ServerServerIdIndexRoute = ServerServerIdIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ServerServerIdRoute,
 } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
@@ -55,69 +49,54 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/channels': typeof ChannelsRoute
   '/sign-in': typeof SignInRoute
-  '/success': typeof SuccessRoute
-  '/todos': typeof TodosRoute
   '/ws': typeof WsRoute
+  '/server/$serverId': typeof ServerServerIdRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/server/$serverId/': typeof ServerServerIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/channels': typeof ChannelsRoute
   '/sign-in': typeof SignInRoute
-  '/success': typeof SuccessRoute
-  '/todos': typeof TodosRoute
   '/ws': typeof WsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/server/$serverId': typeof ServerServerIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/channels': typeof ChannelsRoute
   '/sign-in': typeof SignInRoute
-  '/success': typeof SuccessRoute
-  '/todos': typeof TodosRoute
   '/ws': typeof WsRoute
+  '/server/$serverId': typeof ServerServerIdRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/server/$serverId/': typeof ServerServerIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/channels'
     | '/sign-in'
-    | '/success'
-    | '/todos'
     | '/ws'
+    | '/server/$serverId'
     | '/api/auth/$'
+    | '/server/$serverId/'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/channels'
-    | '/sign-in'
-    | '/success'
-    | '/todos'
-    | '/ws'
-    | '/api/auth/$'
+  to: '/' | '/sign-in' | '/ws' | '/api/auth/$' | '/server/$serverId'
   id:
     | '__root__'
     | '/'
-    | '/channels'
     | '/sign-in'
-    | '/success'
-    | '/todos'
     | '/ws'
+    | '/server/$serverId'
     | '/api/auth/$'
+    | '/server/$serverId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  ChannelsRoute: typeof ChannelsRoute
   SignInRoute: typeof SignInRoute
-  SuccessRoute: typeof SuccessRoute
-  TodosRoute: typeof TodosRoute
   WsRoute: typeof WsRoute
+  ServerServerIdRoute: typeof ServerServerIdRouteWithChildren
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
 
@@ -130,32 +109,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/todos': {
-      id: '/todos'
-      path: '/todos'
-      fullPath: '/todos'
-      preLoaderRoute: typeof TodosRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/success': {
-      id: '/success'
-      path: '/success'
-      fullPath: '/success'
-      preLoaderRoute: typeof SuccessRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/sign-in': {
       id: '/sign-in'
       path: '/sign-in'
       fullPath: '/sign-in'
       preLoaderRoute: typeof SignInRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/channels': {
-      id: '/channels'
-      path: '/channels'
-      fullPath: '/channels'
-      preLoaderRoute: typeof ChannelsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -164,6 +122,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/server/$serverId': {
+      id: '/server/$serverId'
+      path: '/server/$serverId'
+      fullPath: '/server/$serverId'
+      preLoaderRoute: typeof ServerServerIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/server/$serverId/': {
+      id: '/server/$serverId/'
+      path: '/'
+      fullPath: '/server/$serverId/'
+      preLoaderRoute: typeof ServerServerIdIndexRouteImport
+      parentRoute: typeof ServerServerIdRoute
     }
     '/api/auth/$': {
       id: '/api/auth/$'
@@ -175,13 +147,23 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface ServerServerIdRouteChildren {
+  ServerServerIdIndexRoute: typeof ServerServerIdIndexRoute
+}
+
+const ServerServerIdRouteChildren: ServerServerIdRouteChildren = {
+  ServerServerIdIndexRoute: ServerServerIdIndexRoute,
+}
+
+const ServerServerIdRouteWithChildren = ServerServerIdRoute._addFileChildren(
+  ServerServerIdRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  ChannelsRoute: ChannelsRoute,
   SignInRoute: SignInRoute,
-  SuccessRoute: SuccessRoute,
-  TodosRoute: TodosRoute,
   WsRoute: WsRoute,
+  ServerServerIdRoute: ServerServerIdRouteWithChildren,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
 export const routeTree = rootRouteImport

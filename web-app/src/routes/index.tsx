@@ -47,41 +47,44 @@ function App() {
           todos
         </Link>
 
-        <Link to="/channels" className="underline">
-          channels
-        </Link>
         <div className="flex flex-col items-start justify-center">
           <h1 className="font-bold">your orgs</h1>
           {data?.organizations.map((org) => {
             return (
-              <li key={org.id}>
-                <div className="flex flex-row gap-2">
-                  <Button
-                    variant={"destructive"}
-                    onClick={() =>
-                      authClient.organization.delete({
-                        organizationId: org.id
-                      })
-                    }
-                  >
-                    <TrashIcon />
-                  </Button>
-                  {org.id !== activeOrg.data?.id && (
+              <Link
+                key={org.id}
+                to={`/server/$serverId`}
+                params={{ serverId: org.id }}
+              >
+                <li>
+                  <div className="flex flex-row gap-2">
                     <Button
-                      variant={"secondary"}
+                      variant={"destructive"}
                       onClick={() =>
-                        authClient.organization.setActive({
+                        authClient.organization.delete({
                           organizationId: org.id
                         })
                       }
                     >
-                      set as active
+                      <TrashIcon />
                     </Button>
-                  )}
+                    {org.id !== activeOrg.data?.id && (
+                      <Button
+                        variant={"secondary"}
+                        onClick={() =>
+                          authClient.organization.setActive({
+                            organizationId: org.id
+                          })
+                        }
+                      >
+                        set as active
+                      </Button>
+                    )}
 
-                  <p>{org.name}</p>
-                </div>
-              </li>
+                    <p>{org.name}</p>
+                  </div>
+                </li>
+              </Link>
             )
           })}
         </div>

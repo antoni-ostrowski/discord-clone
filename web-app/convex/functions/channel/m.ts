@@ -40,6 +40,21 @@ export const joinOrLeave = authMutation
   .mutation(async ({ ctx, input }) => {
     const isJoin = input.action === "join"
     const program = Effect.gen(function* () {
+      const userCurrentChannelId = ctx.user.currentChannelId
+      if (isJoin && userCurrentChannelId) {
+        yield* effectifyPromise(
+          () =>
+            ctx
+              .table("channel")
+              .getX(userCurrentChannelId)
+              .patch({
+                members: { remove: [ctx.userId] }
+              }),
+
+          (cause, message) => new DatabaseError({ cause, message })
+        )
+      }
+
       yield* effectifyPromise(
         () =>
           ctx

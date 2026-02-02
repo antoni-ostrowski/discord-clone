@@ -102,29 +102,59 @@ export declare const api: {
       }
     >;
   };
-  todo: {
-    m: {
-      create: FunctionReference<"mutation", "public", { text: string }, any>;
-      remove: FunctionReference<
-        "mutation",
-        "public",
-        { todoId: Id<"todo"> },
-        any
-      >;
-      toggle: FunctionReference<"mutation", "public", { id: Id<"todo"> }, any>;
-    };
+  server: {
     q: {
-      list: FunctionReference<
+      get: FunctionReference<
         "query",
         "public",
-        {},
-        Array<{
-          _creationTime: number;
-          _id: Id<"todo">;
-          completed: boolean;
-          text: string;
-          userId: Id<"user">;
-        }>
+        { serverId: Id<"organization"> },
+        {
+          channels: Array<{
+            channel: {
+              _creationTime: number;
+              _id: Id<"channel">;
+              name: string;
+              serverId: Id<"organization">;
+            };
+            isCurrentUserMember: boolean;
+            members: Array<{
+              _creationTime: number;
+              _id: Id<"user">;
+              banExpires?: null | number;
+              banReason?: null | string;
+              banned?: null | boolean;
+              bio?: null | string;
+              createdAt: number;
+              currentChannelId?: Id<"channel">;
+              customerId?: string;
+              deletedAt?: number;
+              email: string;
+              emailVerified: boolean;
+              firstName?: null | string;
+              github?: null | string;
+              image?: null | string;
+              lastActiveOrganizationId?: Id<"organization">;
+              lastName?: null | string;
+              linkedin?: null | string;
+              location?: null | string;
+              name: string;
+              personalOrganizationId?: Id<"organization">;
+              role?: null | string;
+              updatedAt: number;
+              website?: null | string;
+              x?: null | string;
+            }>;
+          }>;
+          server: {
+            _creationTime: number;
+            _id: Id<"organization">;
+            createdAt: number;
+            logo?: null | string;
+            metadata?: null | string;
+            name: string;
+            slug: string;
+          };
+        }
       >;
     };
   };

@@ -266,23 +266,6 @@ export type DataModel = {
     searchIndexes: {};
     vectorIndexes: {};
   };
-  todo: {
-    document: {
-      completed: boolean;
-      text: string;
-      userId: Id<"user">;
-      _id: Id<"todo">;
-      _creationTime: number;
-    };
-    fieldPaths: "_creationTime" | "_id" | "completed" | "text" | "userId";
-    indexes: {
-      by_id: ["_id"];
-      by_creation_time: ["_creationTime"];
-      userId: ["userId", "_creationTime"];
-    };
-    searchIndexes: {};
-    vectorIndexes: {};
-  };
   user: {
     document: {
       banExpires?: null | number;

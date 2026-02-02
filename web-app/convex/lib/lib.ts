@@ -2,7 +2,7 @@ import { CRPCError } from "better-convex/server"
 import { Data, Effect, Either, ManagedRuntime, pipe } from "effect"
 
 /**
- * execute the final eff that returns the success data or wraps the failure in ConvexError,
+ * execute the final eff that returns the success data or wraps the failure in crpc err,
  * (so client can easly read err message via parseConvexError util)
  * R = The requirements provided by the ManagedRuntime
  * E_Runtime = Errors that can occur during runtime initialization

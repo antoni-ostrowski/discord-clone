@@ -3,6 +3,7 @@ import { defineEnt, defineEntSchema, getEntDefinitions } from "convex-ents"
 import { convexToZod } from "convex-helpers/server/zod4"
 import { typedV } from "convex-helpers/validators"
 import { v } from "convex/values"
+import z from "zod"
 
 const schema = defineEntSchema({
   session: defineEnt({
@@ -141,7 +142,6 @@ const schema = defineEntSchema({
       field: "personalOrganizationId",
       optional: true
     })
-    .edges("todo", { ref: true })
     .edges("channelMembers", { to: "channel", table: "channelMembers" })
     .edge("currentChannel", {
       to: "channel",
@@ -151,14 +151,6 @@ const schema = defineEntSchema({
     // Indexes from both tables
     .index("email_name", ["email", "name"])
     .index("name", ["name"]),
-
-  todo: defineEnt({
-    text: v.string(),
-    completed: v.boolean()
-  }).edge("user", {
-    to: "user",
-    field: "userId"
-  }),
 
   channel: defineEnt({
     name: v.string()
@@ -177,18 +169,21 @@ export const sessionZod = convexToZod(vv.doc("session"))
 export const accountZod = convexToZod(vv.doc("account"))
 export const verificationZod = convexToZod(vv.doc("verification"))
 export const jwksZod = convexToZod(vv.doc("jwks"))
-export const todoZod = convexToZod(vv.doc("todo"))
 export const memberZod = convexToZod(vv.doc("member"))
 export const orgZod = convexToZod(vv.doc("organization"))
 export const invitationZod = convexToZod(vv.doc("invitation"))
 export const channelZod = convexToZod(vv.doc("channel"))
+export const channelWithMembersZod = z.object({
+  members: z.array(userZod),
+  channel: channelZod,
+  isCurrentUserMember: z.boolean()
+})
 
 export type UserType = Doc<"user">
 export type SessionType = Doc<"session">
 export type AccountType = Doc<"account">
 export type VerificationType = Doc<"verification">
 export type JwksType = Doc<"jwks">
-export type TodoType = Doc<"todo">
 export type MemberType = Doc<"member">
 export type OrgType = Doc<"organization">
 export type InvitationType = Doc<"invitation">
