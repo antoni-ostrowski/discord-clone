@@ -59,21 +59,22 @@ func (c *Client) SafeSend(msg []byte) {
 }
 
 func (c *Client) SignalNegotiation() {
+	log.Printf("signalling negotation for %v", c.Id)
 	c.mu.Lock()
 
 	offer, err := c.Peer.CreateOffer(nil)
 	if err != nil {
-		log.Printf("❌ Error creating offer for %s: %v", c.Id, err)
+		log.Printf("Error creating offer for %s: %v", c.Id, err)
 		return
 	}
 
 	err = c.Peer.SetLocalDescription(offer)
 	if err != nil {
-		log.Printf("❌ Error setting local description for %s: %v", c.Id, err)
+		log.Printf("Error setting local description for %s: %v", c.Id, err)
 		return
 	}
 
-	log.Printf("✅ Offer created for %s, SDP length: %d", c.Id, len(offer.SDP))
+	log.Printf("Offer created for %v", c.Id)
 
 	c.mu.Unlock()
 
@@ -97,18 +98,6 @@ func (c *Channel) Run() {
 		case client := <-c.Register:
 			log.Printf(":) registering new client %v", client.Id)
 			c.Clients[client.Id] = client
-			c.trackLock.RLock()
-			// give the new client all existing tracks
-			for ownerId, track := range c.tracks {
-				if ownerId == client.Id {
-					continue
-				}
-				client.Peer.AddTrack(track)
-			}
-			c.trackLock.RUnlock()
-
-			// *** CHANGE: Only trigger negotiation after client sends "ready" ***
-			// The client will send "ready" once mic is available
 
 			log.Printf("all the clients: \n")
 			for _, cl := range c.Clients {
@@ -155,11 +144,24 @@ func (c *Channel) Run() {
 				if id == payload.ClientId {
 					continue
 				}
-				client.Peer.AddTrack(payload.NewTrack)
+				alreadyExists := false
+				for _, sender := range client.Peer.GetSenders() {
+					if sender.Track() != nil && sender.Track().ID() == payload.NewTrack.ID() {
+						alreadyExists = true
+						break
+					}
+				}
 
-				client.mu.Lock()
+				if !alreadyExists {
+					_, err := client.Peer.AddTrack(payload.NewTrack)
+					if err != nil {
+						log.Printf("Failed to add track to %v: %v", id, err)
+						continue
+					}
+					client.SignalNegotiation()
+				}
+
 				client.SignalNegotiation()
-				client.mu.Unlock()
 			}
 
 		}
@@ -183,13 +185,7 @@ func (c *Channel) ServeChannel(w http.ResponseWriter, r *http.Request) {
 	se.SetAnsweringDTLSRole(webrtc.DTLSRoleAuto)
 
 	api := webrtc.NewAPI(webrtc.WithSettingEngine(se))
-	peerConnection, err := api.NewPeerConnection(webrtc.Configuration{
-		ICEServers: []webrtc.ICEServer{
-			{
-				URLs: []string{"stun:stun.l.google.com:19302"},
-			},
-		},
-	})
+	peerConnection, err := api.NewPeerConnection(webrtc.Configuration{})
 	if err != nil {
 		log.Printf("failed to init peer connection %v", err)
 		return
@@ -208,7 +204,7 @@ func (c *Channel) ServeChannel(w http.ResponseWriter, r *http.Request) {
 
 	client := &Client{
 		Id:      userId,
-		Send:    make(chan []byte, 256), // ✅ BUFFERED CHANNEL
+		Send:    make(chan []byte, 256),
 		Peer:    peerConnection,
 		Channel: c,
 	}
@@ -218,21 +214,21 @@ func (c *Channel) ServeChannel(w http.ResponseWriter, r *http.Request) {
 		for msg := range client.Send {
 			err := conn.WriteMessage(websocket.TextMessage, msg)
 			if err != nil {
-				log.Printf("❌ Error writing to websocket: %v", err)
+				log.Printf("Error writing to websocket: %v", err)
 				return
 			}
-			log.Printf("📤 Sent message to client %s: %s", client.Id, string(msg))
+			log.Printf("Sent message to client %s: %s", client.Id, string(msg))
 		}
 	}()
 	// here we stup a handler for when server creates new UDP tunnel with some user,
 	// and we need to notify all other channel members that he joined
 	// track remote: User A sends their voice up the tunnel to Go.
 	client.Peer.OnTrack(func(tr *webrtc.TrackRemote, r *webrtc.RTPReceiver) {
-		log.Printf("🎉🎉🎉 OnTrack FIRED for client %s, kind: %s, codec: %s", client.Id, tr.Kind(), tr.Codec().MimeType)
+		log.Printf("OnTrack FIRED for client %s, kind: %s, codec: %s", client.Id, tr.Kind(), tr.Codec().MimeType)
 
-		localTrack, err := webrtc.NewTrackLocalStaticRTP(tr.Codec().RTPCodecCapability, "audio", client.Id)
+		localTrack, err := webrtc.NewTrackLocalStaticRTP(tr.Codec().RTPCodecCapability, client.Id, client.Id)
 		if err != nil {
-			log.Printf("❌ Error creating local track: %v", err)
+			log.Printf("Error creating local track: %v", err)
 			return
 		}
 
@@ -240,40 +236,40 @@ func (c *Channel) ServeChannel(w http.ResponseWriter, r *http.Request) {
 		c.tracks[client.Id] = localTrack
 		c.trackLock.Unlock()
 
-		log.Printf("✅ Created and stored local track for %s", client.Id)
+		log.Printf("Created and stored local track for %s", client.Id)
 
 		c.BroadcastNewTrackChn <- &BroadcastNewTrack{
 			ClientId: client.Id,
 			NewTrack: localTrack,
 		}
 
-		log.Printf("📡 Starting to relay RTP packets for %s", client.Id)
+		log.Printf("Starting to relay RTP packets for %s", client.Id)
 		packetCount := 0
 
 		for {
 			rtp, _, readErr := tr.ReadRTP()
 			if readErr != nil {
-				log.Printf("❌ RTP read error for %s: %v", client.Id, readErr)
+				log.Printf("RTP read error for %s: %v", client.Id, readErr)
 				break
 			}
 			packetCount++
 			if packetCount%100 == 0 {
-				log.Printf("📦 Relayed %d packets for %s", packetCount, client.Id)
+				log.Printf("Relayed %d packets for %s", packetCount, client.Id)
 			}
 
 			err := localTrack.WriteRTP(rtp)
 			if err != nil {
-				log.Printf("❌ RTP write error for %s: %v", client.Id, err)
+				log.Printf("RTP write error for %s: %v", client.Id, err)
 			}
 		}
 
-		log.Printf("🛑 OnTrack loop ended for %s, total packets: %d", client.Id, packetCount)
+		log.Printf("OnTrack loop ended for %s, total packets: %d", client.Id, packetCount)
 	})
 	peerConnection.OnICECandidate(func(c *webrtc.ICECandidate) {
 		if c == nil {
 			return
 		}
-		log.Printf("Server found candidate: %s", c.String())
+		log.Print("Server found some candidate")
 		candidateData := c.ToJSON()
 
 		payloadBytes, err := json.Marshal(candidateData)
@@ -306,22 +302,20 @@ func (c *Channel) ServeChannel(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 
-		log.Printf("📨 RAW message from client %s: %s", client.Id, string(message))
-
 		var msg WSmsg
 		err = json.Unmarshal(message, &msg)
 		if err != nil {
-			log.Printf("❌ Failed to unmarshal message: %v", err)
+			log.Printf("Failed to unmarshal message: %v", err)
 			continue
 		}
 
-		log.Printf("📨 Parsed message type: %s from client %s", msg.Type, client.Id)
+		log.Printf("Parsed message type: %s from client %s", msg.Type, client.Id)
 
 		switch msg.Type {
 		case "offer":
+			log.Printf("Received OFFER from client %s", client.Id)
 			var sdp string
 			json.Unmarshal(msg.Payload, &sdp)
-			log.Printf("📨 Received OFFER from client %s", client.Id)
 
 			offer := webrtc.SessionDescription{
 				Type: webrtc.SDPTypeOffer,
@@ -330,11 +324,10 @@ func (c *Channel) ServeChannel(w http.ResponseWriter, r *http.Request) {
 
 			err := client.Peer.SetRemoteDescription(offer)
 			if err != nil {
-				log.Printf("❌ Error setting remote description: %v", err)
+				log.Printf("Error setting remote description: %v", err)
 				break
 			}
 
-			// ✅ Mark client as ready to receive offers
 			client.mu.Lock()
 			client.ready = true
 			client.mu.Unlock()
@@ -346,13 +339,13 @@ func (c *Channel) ServeChannel(w http.ResponseWriter, r *http.Request) {
 				if ownerId == client.Id {
 					continue
 				}
-				log.Printf("➕ Adding track from %s to %s", ownerId, client.Id)
+				log.Printf("Adding track from %s to %s", ownerId, client.Id)
 				client.Peer.AddTrack(track)
 				trackCount++
 			}
 			c.trackLock.RUnlock()
 
-			log.Printf("📊 Added %d existing tracks to client %s", trackCount, client.Id)
+			log.Printf("Added %d existing tracks to client %s", trackCount, client.Id)
 
 			// Create answer
 			answer, err := client.Peer.CreateAnswer(nil)
@@ -367,7 +360,7 @@ func (c *Channel) ServeChannel(w http.ResponseWriter, r *http.Request) {
 				break
 			}
 
-			log.Printf("✅ Sending answer to client %s", client.Id)
+			log.Printf("Sending answer to client %s", client.Id)
 			answerMsg, _ := json.Marshal(map[string]any{
 				"type":    "answer",
 				"payload": answer.SDP,
@@ -377,7 +370,7 @@ func (c *Channel) ServeChannel(w http.ResponseWriter, r *http.Request) {
 		case "answer":
 			var sdp string
 			json.Unmarshal(msg.Payload, &sdp)
-			log.Printf("📨 Received answer from client %s", client.Id)
+			log.Printf("Received answer from client %s", client.Id)
 
 			answer := webrtc.SessionDescription{
 				Type: webrtc.SDPTypeAnswer,
@@ -386,17 +379,17 @@ func (c *Channel) ServeChannel(w http.ResponseWriter, r *http.Request) {
 
 			err := client.Peer.SetRemoteDescription(answer)
 			if err != nil {
-				log.Printf("❌ Error setting remote description: %v", err)
+				log.Printf("Error setting remote description: %v", err)
 			} else {
-				log.Printf("✅ Answer accepted for client %s", client.Id)
+				log.Printf("Answer accepted for client %s", client.Id)
 			}
 		case "candidate":
 			var candidate webrtc.ICECandidateInit
 			json.Unmarshal(msg.Payload, &candidate)
-			log.Printf("🧊 Adding ICE candidate from client %s", client.Id)
+			log.Printf("Adding ICE candidate from client %s", client.Id)
 			err := peerConnection.AddICECandidate(candidate)
 			if err != nil {
-				log.Printf("❌ Error adding ICE candidate: %v", err)
+				log.Printf("Error adding ICE candidate: %v", err)
 			}
 		}
 	}

@@ -83,18 +83,19 @@ export default function WebRTCClient({
     // 2. Handle incoming remote tracks
     // 2. Handle incoming remote tracks
     pc.current.ontrack = (event) => {
+      const stream = event.streams[0] || new MediaStream([event.track])
       console.log(
         "🎉🎉🎉 Remote track received:",
         event.track.kind,
         event.track.id
       )
-      console.log("Stream ID:", event.streams[0]?.id)
+      console.log("Stream ID:", stream.id)
       console.log("Track enabled:", event.track.enabled)
       console.log("Track muted:", event.track.muted)
       console.log("Track readyState:", event.track.readyState)
 
       const remoteAudio = new Audio()
-      remoteAudio.srcObject = event.streams[0]
+      remoteAudio.srcObject = stream
       remoteAudio.autoplay = true
 
       // CRITICAL: Set volume to max
@@ -103,10 +104,10 @@ export default function WebRTCClient({
       remoteAudio
         .play()
         .then(() => {
-          console.log("✅ Remote audio playing successfully")
+          console.log("Remote audio playing successfully")
         })
         .catch((err) => {
-          console.error("❌ Failed to play remote audio:", err)
+          console.error("Failed to play remote audio:", err)
           // Try playing after user interaction
           document.addEventListener(
             "click",
@@ -260,6 +261,7 @@ export default function WebRTCClient({
 
     socket.onmessage = async (e) => {
       const msg = typeof e.data === "string" ? JSON.parse(e.data) : e.data
+
       console.log("📨 Message received:", msg.type)
       await handleSignal(msg)
     }
@@ -392,8 +394,8 @@ export default function WebRTCClient({
           marginBottom: "5px"
         }}
       >
-        <span style={{ fontSize: "14px", fontWeight: "500" }}>{label}</span>
-        <span style={{ fontSize: "12px", color: "#666" }}>{volume}</span>
+        <span>{label}</span>
+        <span>{volume}</span>
       </div>
       <div
         style={{
